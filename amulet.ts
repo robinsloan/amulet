@@ -1,8 +1,6 @@
 // deno-lint-ignore camelcase
 import { Sha3_512 } from "https://deno.land/std@0.92.0/hash/_sha3/sha3.ts";
-import { Pattern, amuletPatterns } from "./patterns.ts";
-
-const hash: string = new Sha3_512().update("foo").toString("hex");
+import { amuletPatterns, Pattern } from "./patterns.ts";
 
 const AMULET_MAGIC_CHAR = "8";
 const AMULET_MIN_SIGIL_SIZE = 4;
@@ -17,15 +15,15 @@ const AMULET_MASK = [
 ]
 
 if (AMULET_MASK.length !== 25) {
- console.log("YOU HAVE A PROBLEM");
- Deno.exit();
+  console.log("YOU HAVE A PROBLEM");
+  Deno.exit();
 }
 
 // deno-fmt-ignore
 const AMULET_VOCAB = [
   "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
   "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
-  ",", ":", "—", "'", "?", " ", "\n",
+  ",", ":", "—", "'", "?", "!", " ", "\n",
 ]; // 33 chars currentlys
 
 let amuletVocabRegexString = "[^";
@@ -38,6 +36,11 @@ amuletVocabRegexString += "]";
 
 const AMULET_DISALLOWED_CHAR_MATCH = new RegExp(amuletVocabRegexString, "g");
 
+interface GridCoord {
+  y: number,
+  x: number
+}
+
 interface FoundPattern {
   y: number;
   x: number;
@@ -46,7 +49,7 @@ interface FoundPattern {
 
 interface FoundSigil {
   size: number;
-  coords: number[][]; // array of [y, x]
+  coords: GridCoord[];
 }
 
 export class AmuletHash {
@@ -58,7 +61,7 @@ export class AmuletHash {
 
   // scratchpad for sigil-finding
   tempSigilSize: number;
-  tempSigilCoords: number[][]; // array of [y, x]
+  tempSigilCoords: GridCoord[];
   visitedCoords: string[]; // an array of string keys, sort of like a hash
 
   constructor(poem: string) {
@@ -67,13 +70,21 @@ export class AmuletHash {
       "",
     );
 
-    // maybe do "input expansion" here to streeetch poem to cover all the input bits
-    // like input it several times in sequence? or something fancier?
-    const fullHash = new Sha3_512().update(this.normalizedPoem)
-      .toString("hex")
+    // because our poems are often shorter than the SHA3-512 message size,
+    // which is 72 bytes, we'll hash twice, giving the algorithm a richer input
 
+    // first hash
+    const firstHash = new Sha3_512().update(this.normalizedPoem)
+    .toString("hex");
+
+    // second hash, in which we feed the poem back in,
+    // along with that first hash
+    const secondHash = new Sha3_512().update(this.normalizedPoem + firstHash)
+    .toString("hex");
+
+    // extremely important step, intentionally cryptic
     this.hash = AMULET_MASK.map((index) => {
-      return fullHash[index];
+      return secondHash[index];
     }).join("");
 
     this.grid = [];
@@ -92,30 +103,30 @@ export class AmuletHash {
     this.scanForPatterns();
   }
 
-  checkCoord(y: number, x: number) {
-    if (y < 0 || y > 4 || x < 0 || x > 4) {
+  checkCoord(coord: GridCoord) {
+    if (coord.y < 0 || coord.y > 4 || coord.x < 0 || coord.x > 4) {
       return;
     }
 
-    const cellKey = [y, x].toString();
+    const cellKey = [coord.y, coord.x].toString();
     if (this.visitedCoords.includes(cellKey)) {
       return;
     } else {
       this.visitedCoords.push(cellKey);
     }
 
-    if (this.grid[y][x] == AMULET_MAGIC_CHAR) {
+    if (this.grid[coord.y][coord.x] == AMULET_MAGIC_CHAR) {
       this.tempSigilSize++;
-      this.tempSigilCoords.push([y, x]);
-      this.checkCoord(y - 1, x);
-      this.checkCoord(y + 1, x);
-      this.checkCoord(y, x - 1);
-      this.checkCoord(y, x + 1);
+      this.tempSigilCoords.push(coord);
+      this.checkCoord({y: coord.y - 1, x: coord.x});
+      this.checkCoord({y: coord.y + 1, x: coord.x});
+      this.checkCoord({y: coord.y, x: coord.x - 1});
+      this.checkCoord({y: coord.y, x: coord.x + 1});
     }
   }
 
   scanForSigils() {
-    const amuletCharCoords = [];
+    const amuletCharCoords: GridCoord[] = [];
 
     // translate to grid, mark amulet char coords at the same time
     for (let y = 0; y < 5; y++) {
@@ -123,17 +134,18 @@ export class AmuletHash {
         const char = this.hash[(y * 5) + x];
         this.grid[y][x] = char;
         if (char == AMULET_MAGIC_CHAR) {
-          amuletCharCoords.push([y, x]);
+          amuletCharCoords.push({y: y, x: x});
         }
       }
     }
 
-    // now hunt for sigils starting at each amulet char coord
+    // now hunt for sigils starting at each marked amulet char coord
     amuletCharCoords.forEach((coord) => {
-      // reset; we are starting a new hunt
+      // first: reset, because we are starting a new hunt
       this.tempSigilSize = 0;
       this.tempSigilCoords = [];
-      this.checkCoord(coord[0], coord[1]); // begin at amulet char coord y, x
+      // recursively search, starting at amulet char coord y, x
+      this.checkCoord(coord);
 
       if (this.tempSigilSize > AMULET_MIN_SIGIL_SIZE) {
         this.sigils.push({
@@ -145,19 +157,19 @@ export class AmuletHash {
   }
 
   checkPatternAtOffset(
-    pattern: string[][],
-    char: string,
+    patternGrid: string[][],
     y: number,
     x: number,
+    char: string,
   ) {
-    const patternHeight = pattern.length;
-    const patternWidth = pattern[0].length;
-    if (x + patternWidth >= 5) return;
-    if (y + patternHeight >= 5) return;
+    const patternHeight = patternGrid.length;
+    const patternWidth = patternGrid[0].length;
+    if (x + patternWidth >= 5) return false;
+    if (y + patternHeight >= 5) return false;
 
     for (let py = 0; py < patternHeight; py++) {
       for (let px = 0; px < patternWidth; px++) {
-        if (pattern[py][px] == "8") {
+        if (patternGrid[py][px] == "8") {
           if (this.grid[y + py][x + px] !== char) {
             // BZZZT
             return false;
@@ -179,7 +191,12 @@ export class AmuletHash {
 
       for (let y = 0; y < marginY; y++) {
         for (let x = 0; x < marginX; x++) {
-          const hasPattern = this.checkPatternAtOffset(pattern.grid, char, y, x);
+          const hasPattern = this.checkPatternAtOffset(
+            pattern.grid,
+            y,
+            x,
+            char,
+          );
           if (hasPattern) {
             this.patterns.push({ y: y, x: x, pattern: pattern });
           }

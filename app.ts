@@ -8,6 +8,8 @@ const poems: string[] = JSON.parse(jsonPoems);
 let amuletCount = 0;
 const amulets: AmuletHash[] = [];
 
+const startTime = performance.now();
+
 poems.forEach((poem: string) => {
   const amulet = new AmuletHash(poem);
 
@@ -16,6 +18,12 @@ poems.forEach((poem: string) => {
     amuletCount++;
   }
 });
+
+const endTime = performance.now();
+console.log(
+  `Took ${(endTime - startTime)/1000.0} seconds total,
+   ~${(endTime - startTime)/poems.length} ms per poem`
+);
 
 console.log(`From ${poems.length} poems, found ${amuletCount} amulets.`);
 console.log("Here's one:");

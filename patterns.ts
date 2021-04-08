@@ -17,16 +17,16 @@ const SHIELD = `
 88
 `;
 
-const AXE = `
-888
+const STAFF = `
+88
  8
  8
 `;
 
-const STAFF = `
+const MIRROR = `
 888
-  8
-  8
+8 8
+888
 `;
 
 const PATTERNS: { [name: string] : string } = {
@@ -34,8 +34,8 @@ const PATTERNS: { [name: string] : string } = {
   quad: QUAD,
   sword: SWORD,
   shield: SHIELD,
-  axe: AXE,
   staff: STAFF,
+  mirror: MIRROR,
 };
 
 export interface Pattern {
@@ -105,7 +105,6 @@ function makeGridFrom(pattern: string): string[][] {
   return grid;
 }
 
-export const amuletPatterns: Pattern[] = [];
 const addedPatternKeys: string[] = [];
 
 function addToPatternsIfUnique(name: string, grid: string[][]) {
@@ -117,6 +116,8 @@ function addToPatternsIfUnique(name: string, grid: string[][]) {
     addedPatternKeys.push(gridKey);
   }
 }
+
+export const amuletPatterns: Pattern[] = [];
 
 for (const patternName of Object.keys(PATTERNS)) {
   const stringPattern: string = PATTERNS[patternName];
