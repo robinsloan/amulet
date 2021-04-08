@@ -37,8 +37,8 @@ amuletVocabRegexString += "]";
 const AMULET_DISALLOWED_CHAR_MATCH = new RegExp(amuletVocabRegexString, "g");
 
 interface GridCoord {
-  y: number,
-  x: number
+  y: number;
+  x: number;
 }
 
 interface FoundPattern {
@@ -75,12 +75,12 @@ export class AmuletHash {
 
     // first hash
     const firstHash = new Sha3_512().update(this.normalizedPoem)
-    .toString("hex");
+      .toString("hex");
 
     // second hash, in which we feed the poem back in,
     // along with that first hash
     const secondHash = new Sha3_512().update(this.normalizedPoem + firstHash)
-    .toString("hex");
+      .toString("hex");
 
     // extremely important step, intentionally cryptic
     this.hash = AMULET_MASK.map((index) => {
@@ -118,10 +118,10 @@ export class AmuletHash {
     if (this.grid[coord.y][coord.x] == AMULET_MAGIC_CHAR) {
       this.tempSigilSize++;
       this.tempSigilCoords.push(coord);
-      this.checkCoord({y: coord.y - 1, x: coord.x});
-      this.checkCoord({y: coord.y + 1, x: coord.x});
-      this.checkCoord({y: coord.y, x: coord.x - 1});
-      this.checkCoord({y: coord.y, x: coord.x + 1});
+      this.checkCoord({ y: coord.y - 1, x: coord.x });
+      this.checkCoord({ y: coord.y + 1, x: coord.x });
+      this.checkCoord({ y: coord.y, x: coord.x - 1 });
+      this.checkCoord({ y: coord.y, x: coord.x + 1 });
     }
   }
 
@@ -134,7 +134,7 @@ export class AmuletHash {
         const char = this.hash[(y * 5) + x];
         this.grid[y][x] = char;
         if (char == AMULET_MAGIC_CHAR) {
-          amuletCharCoords.push({y: y, x: x});
+          amuletCharCoords.push({ y: y, x: x });
         }
       }
     }

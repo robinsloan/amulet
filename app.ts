@@ -21,8 +21,8 @@ poems.forEach((poem: string) => {
 
 const endTime = performance.now();
 console.log(
-  `Took ${(endTime - startTime)/1000.0} seconds total,
-   ~${(endTime - startTime)/poems.length} ms per poem`
+  `Took ${(endTime - startTime) / 1000.0} seconds total,
+   ~${(endTime - startTime) / poems.length} ms per poem`,
 );
 
 console.log(`From ${poems.length} poems, found ${amuletCount} amulets.`);

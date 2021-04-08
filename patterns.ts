@@ -29,7 +29,7 @@ const MIRROR = `
 888
 `;
 
-const PATTERNS: { [name: string] : string } = {
+const PATTERNS: { [name: string]: string } = {
   triple: TRIPLE,
   quad: QUAD,
   sword: SWORD,
@@ -39,8 +39,8 @@ const PATTERNS: { [name: string] : string } = {
 };
 
 export interface Pattern {
-  name: string,
-  grid: string[][],
+  name: string;
+  grid: string[][];
 }
 
 function mirror(grid: string[][]): string[][] {
@@ -112,7 +112,7 @@ function addToPatternsIfUnique(name: string, grid: string[][]) {
   if (addedPatternKeys.includes(gridKey)) {
     return;
   } else {
-    amuletPatterns.push({name: name, grid: [...grid]}); // add a copy of the grid
+    amuletPatterns.push({ name: name, grid: [...grid] }); // add a copy of the grid
     addedPatternKeys.push(gridKey);
   }
 }
