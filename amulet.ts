@@ -1,5 +1,5 @@
 // deno-lint-ignore camelcase
-import { Sha3_512 } from "https://deno.land/std@0.92.0/hash/_sha3/sha3.ts";
+import { Keccak256 } from "https://deno.land/std@0.92.0/hash/_sha3/keccak.ts";
 import { amuletPatterns, Pattern } from "./patterns.ts";
 
 const AMULET_MAGIC_CHAR = "8";
@@ -70,16 +70,16 @@ export class AmuletHash {
       "",
     );
 
-    // because our poems are often shorter than the SHA3-512 message size,
-    // which is 72 bytes, we'll hash twice, giving the algorithm a richer input
+    // because our poems are often shorter than the Keccak-256 message size,
+    // which is 136 bytes, we'll hash twice, giving the algorithm a richer input
 
     // first hash
-    const firstHash = new Sha3_512().update(this.normalizedPoem)
+    const firstHash = new Keccak256().update(this.normalizedPoem)
       .toString("hex");
 
     // second hash, in which we feed the poem back in,
     // along with that first hash
-    const secondHash = new Sha3_512().update(this.normalizedPoem + firstHash)
+    const secondHash = new Keccak256().update(this.normalizedPoem + firstHash)
       .toString("hex");
 
     // extremely important step, intentionally cryptic
